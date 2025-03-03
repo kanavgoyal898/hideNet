@@ -1,0 +1,9 @@
+gdown
+jupyterlab
+matplotlib
+numpy
+opencv-python
+scikit-learn
+scipy
+torch
+torchvision
