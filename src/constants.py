@@ -1,0 +1,6 @@
+BATCH_SIZE = 16
+
+IMG_PATH = '../image.jpg'
+IMG_HEIGHT = 256
+IMG_WIDTH = 256
+NUM_CHANNELS = 3
