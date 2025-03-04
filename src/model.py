@@ -78,21 +78,3 @@ class Model(torch.nn.Module):
         if images_ is not None:
             loss = torch.nn.functional.mse_loss(out_, images_)
         return out_, loss
-    
-model = Model()
-model.to(DEVICE)
-print(f"{sum(p.numel() for p in model.parameters()):,} parameters running on {model.device} device.")
-
-o_img = torch.randn(BATCH_SIZE, NUM_CHANNELS, IMG_HEIGHT//2, IMG_WIDTH//2)
-e_img = torch.randn(BATCH_SIZE, NUM_CHANNELS, IMG_HEIGHT//2, IMG_WIDTH//2)
-
-e_img = e_img.to(DEVICE)
-o_img = o_img.to(DEVICE)
-
-img_, loss = model(e_img, o_img)
-print("\nOutput odd shape:\t", img_.shape)
-print("Loss:", loss.item())
-
-img_, loss = model(o_img, e_img)
-print("\nOutput even shape:\t", img_.shape)
-print("Loss:", loss.item())

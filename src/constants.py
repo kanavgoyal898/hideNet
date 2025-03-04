@@ -1,10 +1,13 @@
 import torch
 
+EPOCHS = 5
 BATCH_SIZE = 16
 
 IMG_PATH = '../image.jpg'
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
+IMG_SIZE = 256
+LEARNING_RATE = 1e-3
 
 NUM_HEADS = 3
 NUM_CHANNELS = 3
