@@ -2,9 +2,8 @@ from constants import *
 from model import Model
 from utils import *
 
-import os
 import random
-import sklearn
+import skimage
 import torch
 import torchvision
 import numpy as np
@@ -28,87 +27,85 @@ dataset_test = torchvision.datasets.Flowers102(root='../data/', split='test', do
 train_valid_loader = torch.utils.data.DataLoader(dataset_train_val, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
 test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
 
-def train_model(model, train_loader, test_loader):
-    model.eval()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+model = Model()
+model.to(DEVICE)
+optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
-    maes = []
-    losses = []
-    for epoch in range(EPOCHS):
-        num_steps = len(train_loader)
+print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters()):,} parameters.\n")
+
+def train_model():
+    losses, simies = [], []
+
+    for epoch in range(EPOCHS):   
 
         iter = 0
-        loss_e = []
-        for images, _ in train_loader:
+        num_steps = len(train_valid_loader)
+    
+        loss_e, simi_e = [], []
+        for images, _ in train_valid_loader:
             if NUM_CHANNELS == 1:
                 images = to_bw(images)
-            x, y = split_image(images)
-            x = torch.tensor(x)
-            y = torch.tensor(y)
-            x = x.to(DEVICE)
-            y = y.to(DEVICE)
+            images = images.to('cpu').detach().numpy()
+            images_ = images
 
-            out, loss = model(x, y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            d = 0
+            # Split Images
+            while d < CNN_DEPTH:
+                e_img, o_img = split_image(images_)
+
+                x = torch.from_numpy(e_img).to(torch.float32).to(DEVICE)
+                y = torch.from_numpy(o_img).to(torch.float32).to(DEVICE)
+
+                y_, loss = model(x, y)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                images_ = e_img
+                d += 1
+
+
+            d = 0
+            # Merge Images
+            while d < CNN_DEPTH:
+                x = e_img
+                x = torch.from_numpy(x).to(torch.float32).to(DEVICE)
+                y, _ = model(x)
+
+                e_img = x.to('cpu').detach().numpy()
+                o_img = y.to('cpu').detach().numpy()
+
+                images_ = merge_images(e_img, o_img)
+
+                e_img = images_
+                o_img = None
+                d += 1
+
+            images = images.transpose(0, 2, 3, 1)
+            images_ = images_.transpose(0, 2, 3, 1)
+
+            similarity = skimage.metrics.structural_similarity(images, images_, channel_axis=-1, data_range=images.max() - images.min())
+            print(f"Epoch {epoch+1:4d}/{EPOCHS:4d} |\t Step {iter+1:4d}/{num_steps:4d} |\t Loss: {loss.item():.4f} |\t Structural Similarity: {similarity:.4f}")
 
             loss_e.append(loss.item())
-            print(f"TRAINING MODE \t|| Epoch: {epoch+1:4d}/{EPOCHS:4d} | Iteration: {iter+1:4d}/{num_steps:4d} | Loss: {loss.item():.4f}")
+            simi_e.append(similarity)
 
             iter += 1
-        
-        mae = test_model(model, test_loader)
 
-        maes.append(mae)
-        losses.extend(loss_e)
-        print(f"EVALUATION MODE || Epoch: {epoch+1:4d}/{EPOCHS:4d} | Loss: {np.mean(loss_e):.4f}")
-        print(f"EVALUATION MODE || Epoch: {epoch+1:4d}/{EPOCHS:4d} | Mean Absolute Error: {mae:.4f}")
-        print(f"-------------------------------------------------------------------------")
+        losses.append(np.mean(loss_e))
+        simies.append(np.mean(simi_e))
 
-    return losses, maes
+    return losses, simies
 
-@torch.no_grad()
-def test_model(model, test_loader):
-    model.eval()
+def plot_graph(values, metric='Metric'):
+    epochs = range(1, len(values)+1)
+    plt.plot(epochs, values)
+    plt.xlabel('Epochs')
+    plt.ylabel(metric)
 
-    X, Y, Y_ = [], [], []
-    for images, _ in test_loader:
-        if NUM_CHANNELS == 1:
-            images = to_bw(images)
-        x, y = split_image(images)
-        x = torch.tensor(x)
-        y = torch.tensor(y)
-        x = x.to(DEVICE)
-        y = y.to(DEVICE)
+    plt.show();
 
-        y_, _ = model(x, y)
+losses, simies = train_model()
+plot_graph(losses, 'Loss')
+plot_graph(simies, 'Structural Similarity')
 
-        X.append(x.cpu().numpy())
-        Y.append(y.cpu().numpy())
-        Y_.append(y_.cpu().numpy())
-
-    X = np.concatenate(X)
-    Y = np.concatenate(Y)
-    Y_ = np.concatenate(Y_)
-
-    Y = Y.reshape(-1)
-    Y_ = Y_.reshape(-1)
-
-    return sklearn.metrics.mean_absolute_error(Y, Y_)    
-
-def train_and_test():
-    model = Model()
-    model.to(DEVICE)
-
-    print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters()):,} parameters.\n")
-
-    losses, maes = train_model(model, train_valid_loader, test_loader)
-    mae = test_model(model, test_loader)
-
-    if os.path.exists("./models") == False:
-        os.mkdir("./models")
-    torch.save(model.state_dict(), "./models/model.pth")
-    print(f"Model saved at ./models/model.pth")
-
-train_and_test()
