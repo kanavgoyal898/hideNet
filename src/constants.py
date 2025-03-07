@@ -13,6 +13,6 @@ NUM_HEADS = 5
 NUM_CHANNELS = 1
 INTERMEDIATE_CHANNELS = 64
 
-CNN_DEPTH = 3
+CNN_DEPTH = 1
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'

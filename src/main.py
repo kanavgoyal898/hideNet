@@ -31,6 +31,6 @@ model.to(DEVICE)
 
 print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters()):,} parameters.\n")
 
-losses, simies = train_model(model, train_valid_loader)
+losses, simies = train_model(model, train_valid_loader, monitor=True)
 plot_graph(losses, 'Loss')
 plot_graph(simies, 'Structural Similarity')

@@ -154,7 +154,7 @@ def show_images(image1, image2, title1="Image Title 1", title2="Image Title 2"):
     else:
         raise ValueError("Input tensors should have 3 (C, H, W) or 2 (H, W) dimensions.")
     
-def train_model(model, train_loader):
+def train_model(model, train_loader, monitor=True):
     losses, simies = [], []
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1)
@@ -234,8 +234,12 @@ def train_model(model, train_loader):
 
         scheduler.step()
 
+        if monitor:
+            show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
         losses.append(np.mean(loss_e))
         simies.append(np.mean(simi_e))
+
+    show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
 
     return losses, simies
 
@@ -245,5 +249,28 @@ def plot_graph(values, metric='Metric'):
     plt.xlabel('Epochs')
     plt.ylabel(metric)
 
-    plt.show();
-    
+    plt.show()
+
+def show_image(img, title=""):
+    if img.ndim == 3 or img.ndim == 2:
+        plt.imshow(img, cmap="gray")
+        plt.title(title)
+        plt.axis("off")
+        plt.show()
+    else:
+        ValueError("Input tensor should have 3 (C, H, W) or 2 (H, W) dimensions.")
+
+def show_images(image1, image2, title1="Image 1", title2="Image 2"):    
+    plt.figure(figsize=(10, 2))
+
+    plt.subplot(1, 2, 1)
+    plt.imshow(image1, cmap='gray' if image1.ndim == 2 else None)
+    plt.title(title1)
+    plt.axis("off")
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(image2, cmap='gray' if image2.ndim == 2 else None)
+    plt.title(title2)
+    plt.axis("off")
+
+    plt.show()
