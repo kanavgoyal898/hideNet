@@ -42,7 +42,7 @@ class Model(torch.nn.Module):
         self.conv1 = torch.nn.ModuleList()
         for i in range(self.num_heads):
             layer = [
-                torch.nn.Conv2d(self.in_channels, self.intermediate_channels, kernel_size=(i)*2+1, stride=1, padding=(i)*2//2),
+                torch.nn.Conv2d(self.in_channels, self.intermediate_channels, kernel_size=(i)*2+1, stride=1, padding=i),
                 torch.nn.LeakyReLU(inplace=True),
                 torch.nn.Conv2d(self.intermediate_channels, self.intermediate_channels, kernel_size=3, stride=1, padding=1),
             ]

@@ -1,4 +1,5 @@
 import torch
+import skimage
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -152,4 +153,97 @@ def show_images(image1, image2, title1="Image Title 1", title2="Image Title 2"):
         plt.show()
     else:
         raise ValueError("Input tensors should have 3 (C, H, W) or 2 (H, W) dimensions.")
+    
+def train_model(model, train_loader):
+    losses, simies = [], []
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1)
+
+    for epoch in range(EPOCHS):   
+
+        iter = 0
+        num_steps = len(train_loader)
+    
+        loss_e, simi_e = [], []
+        for images, _ in train_loader:
+            if NUM_CHANNELS == 1:
+                images = to_bw(images)
+            images = images.to('cpu').detach().numpy()
+            images_ = images
+
+            loss_i = []
+
+            d = 0
+            # Split Images
+            while d < CNN_DEPTH:
+                e_img, o_img = split_image(images_)
+
+                x = torch.from_numpy(e_img).to(torch.float32).to(DEVICE)
+                y = torch.from_numpy(o_img).to(torch.float32).to(DEVICE)
+
+                y_, loss = model(x, y)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                images_ = e_img
+                d += 1
+
+                loss_i.append(loss.item())
+
+            d = 0
+            # Merge Images
+            while d < CNN_DEPTH:
+                x = e_img
+                x = torch.from_numpy(x).to(torch.float32).to(DEVICE)
+                y, _ = model(x)
+
+                e_img = x.to('cpu').detach().numpy()
+                o_img = y.to('cpu').detach().numpy()
+
+                images_ = merge_images(e_img, o_img)
+
+                e_img = images_
+                o_img = None
+                d += 1
+
+            images = images.transpose(0, 2, 3, 1)
+            images_ = images_.transpose(0, 2, 3, 1)
+
+            """
+                Structural Similarity Index:
+                SSIM(X, Y) = ((2 * μX * μY + C1) * (2 * σXY + C2)) / ((μX² + μY² + C1) * (σX² + σY² + C2))
+                where:
+                - μX, μY = Mean pixel intensity of images X and Y
+                - σX², σY² = Variance of images X and Y
+                - σXY = Covariance between X and Y
+                - C1, C2 = Small constants for numerical stability
+                SSIM ranges from -1 to 1:
+                - +1 = Identical images
+                -  0 = No similarity
+                - -1 = Structurally different
+            """
+
+            similarity = skimage.metrics.structural_similarity(images, images_, channel_axis=-1, data_range=max(images.max(), images_.min()) - min(images.min(), images_.min()))
+            print(f"Epoch {epoch+1:4d}/{EPOCHS:4d} |\t Step {iter+1:4d}/{num_steps:4d} |\t Loss: {np.mean(loss_i):8.4f} |\t Structural Similarity: {similarity:.4f}")
+
+            loss_e.append(loss.item())
+            simi_e.append(similarity)
+
+            iter += 1
+
+        scheduler.step()
+
+        losses.append(np.mean(loss_e))
+        simies.append(np.mean(simi_e))
+
+    return losses, simies
+
+def plot_graph(values, metric='Metric'):
+    epochs = range(1, len(values)+1)
+    plt.plot(epochs, values)
+    plt.xlabel('Epochs')
+    plt.ylabel(metric)
+
+    plt.show();
     
