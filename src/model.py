@@ -171,6 +171,8 @@ class UNetLikeLite(torch.nn.Module):
 
         self.d_sample = torch.nn.Conv2d(self.num_channels, self.out_channels, 3, 1, 1)
 
+        self.sigmoid = torch.nn.Sigmoid()
+
     def forward(self, images, images_=None):
         """
         Forward pass through the UNet-like model.
@@ -199,6 +201,8 @@ class UNetLikeLite(torch.nn.Module):
             out = residual_blocks.pop()
             out_ = block(out_ + out)
         out_ = self.d_sample(out_)
+        
+        out_ = self.sigmoid(out_)
 
         loss = None
         if images_ is not None:

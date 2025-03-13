@@ -120,7 +120,7 @@ def show_image(img, title="Image Title"):
         plt.imshow(img, cmap="gray")
         plt.title(title)
         plt.axis("off")
-        plt.show()
+        plt.show();
     else:
         raise ValueError("Input tensor should have 3 (C, H, W) or 2 (H, W) dimensions.")
 
@@ -150,7 +150,7 @@ def show_images(image1, image2, title1="Image Title 1", title2="Image Title 2"):
         plt.imshow(image2, cmap="gray")
         plt.title(title2)
         plt.axis("off")
-        plt.show()
+        plt.show();
     else:
         raise ValueError("Input tensors should have 3 (C, H, W) or 2 (H, W) dimensions.")
     
@@ -263,7 +263,7 @@ def plot_graph(values, metric='Metric'):
     plt.ylabel(metric)
     plt.title(f'{metric} vs. Epochs')
 
-    plt.show()
+    plt.show();
 
 def plot_graphs(values, count=0, metric='Metric'):
     """
@@ -286,14 +286,14 @@ def plot_graphs(values, count=0, metric='Metric'):
     plt.title(f'{metric} vs. Iterations for Last {count} Epochs')
     plt.legend()
 
-    plt.show()
+    plt.show();
 
 def show_image(img, title=""):
     if img.ndim == 3 or img.ndim == 2:
         plt.imshow(img, cmap="gray")
         plt.title(title)
         plt.axis("off")
-        plt.show()
+        plt.show();
     else:
         ValueError("Input tensor should have 3 (C, H, W) or 2 (H, W) dimensions.")
 
@@ -310,4 +310,4 @@ def show_images(image1, image2, title1="Image 1", title2="Image 2"):
     plt.title(title2)
     plt.axis("off")
 
-    plt.show()
+    plt.show();
