@@ -2,6 +2,7 @@ from constants import *
 from model import *
 from utils import *
 
+import os
 import random
 import torch
 import torchvision
@@ -34,3 +35,8 @@ print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters
 losses, simies = train_model(model, train_valid_loader, monitor=False)
 plot_graphs(losses, 'Loss')
 plot_graphs(simies, 'Structural Similarity')
+
+os.makedirs('./parameters', exist_ok=True)
+model_path = f'./parameters/{model.__class__.__name__}.pth'
+torch.save(model.state_dict(), model_path)
+print(f"Model saved at {model_path}\n")
