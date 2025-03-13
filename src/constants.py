@@ -1,6 +1,6 @@
 import torch
 
-EPOCHS = 5
+EPOCHS = 100
 BATCH_SIZE = 16
 
 IMG_PATH = '../image.jpg'
@@ -12,8 +12,9 @@ LEARNING_RATE = 1e-3
 NUM_HEADS = 5
 NUM_BLOCKS = 3
 NUM_CHANNELS = 1
-INTERMEDIATE_CHANNELS = 1
 
-CNN_DEPTH = 1
+INTERMEDIATE_CHANNELS = 32
+
+CNN_DEPTH = 3
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'

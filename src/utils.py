@@ -157,7 +157,7 @@ def show_images(image1, image2, title1="Image Title 1", title2="Image Title 2"):
 def train_model(model, train_loader, monitor=True):
     losses, simies = [], []
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, EPOCHS)
 
     for epoch in range(EPOCHS):   
 
@@ -225,7 +225,7 @@ def train_model(model, train_loader, monitor=True):
             """
 
             similarity = skimage.metrics.structural_similarity(images, images_, channel_axis=-1, data_range=max(images.max(), images_.min()) - min(images.min(), images_.min()))
-            print(f"Epoch {epoch+1:4d}/{EPOCHS:4d} |\t Step {iter+1:4d}/{num_steps:4d} |\t Loss: {np.mean(loss_i):8.4f} |\t Structural Similarity: {similarity:.4f}")
+            print(f"Epoch {epoch+1:4d}/{EPOCHS:4d} |\t Step {iter+1:4d}/{num_steps:4d} |\t Loss: {np.mean(loss_i):8.4f} |\t Structural Similarity: {similarity:8.4f}")
 
             loss_e.append(loss.item())
             simi_e.append(similarity)
@@ -261,26 +261,29 @@ def plot_graph(values, metric='Metric'):
     plt.plot(epochs, values)
     plt.xlabel('Epochs')
     plt.ylabel(metric)
+    plt.title(f'{metric} vs. Epochs')
 
     plt.show()
 
-def plot_graphs(values, metric='Metric'):
+def plot_graphs(values, count=0, metric='Metric'):
     """
     Plots multiple epoch functions from a list of lists.
 
     Args:
         values (list of list of float): A list where each inner list represents values of a function over iterations in a specific epoch.
         metric (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+        count (int): Number of epochs to plot. Defaults to 0.
 
     Returns:
         None
     """
     
     plt.figure(figsize=(10, 5))
-    for i, epoch in enumerate(values):
+    for i, epoch in enumerate(values[-count:]):
         plt.plot(range(len(epoch)), epoch, label=f'Epoch {i+1}')
     plt.xlabel('Iterations')
     plt.ylabel(metric)
+    plt.title(f'{metric} vs. Iterations for Last {count} Epochs')
     plt.legend()
 
     plt.show()

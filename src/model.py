@@ -153,6 +153,15 @@ class UNetLikeLite(torch.nn.Module):
             )
             self.num_channels *= 2
 
+        self.sampling_blocks = torch.nn.ModuleList()
+        for _ in range(num_blocks):
+            self.sampling_blocks.append(
+                torch.nn.Sequential(
+                    ConvolutionBlockLikeLite(self.num_channels, self.num_channels, "down"),
+                    ConvolutionBlockLikeLite(self.num_channels, self.num_channels, "up"),
+                )
+            )
+
         self.d_sampling_blocks = torch.nn.ModuleList()
         for _ in range(num_blocks):
             self.d_sampling_blocks.append(
@@ -175,11 +184,20 @@ class UNetLikeLite(torch.nn.Module):
         """
 
         out_ = images
+
+        residual_blocks = []
+
         out_ = self.u_sample(out_)
         for block in self.u_sampling_blocks:
             out_ = block(out_)
+            residual_blocks.append(out_)
+
+        for block in self.sampling_blocks:
+            out_ = block(out_) + out_
+
         for block in self.d_sampling_blocks:
-            out_ = block(out_)
+            out = residual_blocks.pop()
+            out_ = block(out_ + out)
         out_ = self.d_sample(out_)
 
         loss = None
