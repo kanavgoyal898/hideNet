@@ -1,5 +1,5 @@
 from constants import *
-from model import Model
+from model import *
 from utils import *
 
 import random
@@ -26,11 +26,11 @@ dataset_test = torchvision.datasets.Flowers102(root='../data/', split='test', do
 train_valid_loader = torch.utils.data.DataLoader(dataset_train_val, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
 test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
 
-model = Model()
+model = UNetLikeLite()
 model.to(DEVICE)
 
-print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters()):,} parameters.\n")
+print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters() if p.requires_grad):,} parameters.\n")
 
-losses, simies = train_model(model, train_valid_loader, monitor=True)
-plot_graph(losses, 'Loss')
-plot_graph(simies, 'Structural Similarity')
+losses, simies = train_model(model, train_valid_loader, monitor=False)
+plot_graphs(losses, 'Loss')
+plot_graphs(simies, 'Structural Similarity')

@@ -236,18 +236,52 @@ def train_model(model, train_loader, monitor=True):
 
         if monitor:
             show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
-        losses.append(np.mean(loss_e))
-        simies.append(np.mean(simi_e))
+        losses.append(loss_e)
+        simies.append(simi_e)
 
-    show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
+    if monitor:
+        show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
 
     return losses, simies
 
 def plot_graph(values, metric='Metric'):
+    """
+    Plots a line graph for a given set of values over epochs.
+
+    Args:
+        values (list of float): A list of numerical values representing the metric over epochs.
+        metric (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+
+    Returns:
+        None
+    """
+
+    plt.figure(figsize=(10, 5))
     epochs = range(1, len(values)+1)
     plt.plot(epochs, values)
     plt.xlabel('Epochs')
     plt.ylabel(metric)
+
+    plt.show()
+
+def plot_graphs(values, metric='Metric'):
+    """
+    Plots multiple epoch functions from a list of lists.
+
+    Args:
+        values (list of list of float): A list where each inner list represents values of a function over iterations in a specific epoch.
+        metric (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+
+    Returns:
+        None
+    """
+    
+    plt.figure(figsize=(10, 5))
+    for i, epoch in enumerate(values):
+        plt.plot(range(len(epoch)), epoch, label=f'Epoch {i+1}')
+    plt.xlabel('Iterations')
+    plt.ylabel(metric)
+    plt.legend()
 
     plt.show()
 

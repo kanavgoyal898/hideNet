@@ -1,7 +1,8 @@
 from constants import *
 import torch
+import torchvision
 
-class Model(torch.nn.Module):
+class CNNP(torch.nn.Module):
     """
     A convolutional neural network (CNN) with multiple convolutional heads, 
     followed by two additional convolutional blocks.
@@ -78,3 +79,112 @@ class Model(torch.nn.Module):
         if images_ is not None:
             loss = torch.nn.functional.mse_loss(out_, images_)
         return out_, loss
+    
+class UNetLikeLite(torch.nn.Module):
+    """
+    A lightweight U-Net-like architecture for image transformation tasks.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        num_blocks (int): Number of up/downsampling blocks.
+        num_channels (int): Initial number of intermediate channels.
+        device (str or torch.device): Device to use for computation.
+    """
+
+    def __init__(self, in_channels=NUM_CHANNELS, out_channels=NUM_CHANNELS, num_blocks=NUM_BLOCKS, num_channels=INTERMEDIATE_CHANNELS, device=DEVICE):
+
+        class ConvolutionBlockLikeLite(torch.nn.Module):
+            """
+            A convolutional block for upsampling or downsampling.
+
+            Args:
+                in_channels (int): Number of input channels.
+                out_channels (int): Number of output channels.
+                type (str): Type of operation, 'up' for upsampling, 'down' for downsampling.
+            """
+
+            def __init__(self, in_channels, out_channels, type):
+                super().__init__()
+                
+                self.layers = None
+                if type == "up" or type == "u":
+                    self.layers = torch.nn.Sequential(
+                        torch.nn.Conv2d(in_channels, out_channels, 3, 1, 1),
+                        torch.nn.LeakyReLU(inplace=True),
+                        torch.nn.Conv2d(out_channels, out_channels, 3, 1, 1),
+                        torch.nn.LeakyReLU(inplace=True),
+                    )
+
+                if type == "down" or type == "d":
+                    self.layers = torch.nn.Sequential(
+                        torch.nn.Conv2d(in_channels, in_channels, 3, 1, 1),
+                        torch.nn.LeakyReLU(inplace=True),
+                        torch.nn.Conv2d(in_channels, out_channels, 3, 1, 1),
+                        torch.nn.LeakyReLU(inplace=True),
+                    )
+
+            def forward(self, x):
+                """
+                Forward pass through the convolution block.
+
+                Args:
+                    x (torch.Tensor): Input tensor.
+
+                Returns:
+                    torch.Tensor: Processed output tensor.
+                """
+
+                return self.layers(x)
+        
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.num_channels = num_channels
+        self.device = device
+
+        self.u_sample = torch.nn.Conv2d(self.in_channels, self.num_channels, 3, 1, 1)
+
+        self.u_sampling_blocks = torch.nn.ModuleList()
+        for _ in range(num_blocks):
+            self.u_sampling_blocks.append(
+                ConvolutionBlockLikeLite(self.num_channels, self.num_channels*2, "up")
+            )
+            self.num_channels *= 2
+
+        self.d_sampling_blocks = torch.nn.ModuleList()
+        for _ in range(num_blocks):
+            self.d_sampling_blocks.append(
+                ConvolutionBlockLikeLite(self.num_channels, self.num_channels//2, "down")
+            )
+            self.num_channels //= 2
+
+        self.d_sample = torch.nn.Conv2d(self.num_channels, self.out_channels, 3, 1, 1)
+
+    def forward(self, images, images_=None):
+        """
+        Forward pass through the UNet-like model.
+
+        Args:
+            images (torch.Tensor): Input images.
+            images_ (torch.Tensor, optional): Target images for computing loss.
+
+        Returns:
+            tuple: (output tensor, loss if images_ is provided, else None)
+        """
+
+        out_ = images
+        out_ = self.u_sample(out_)
+        for block in self.u_sampling_blocks:
+            out_ = block(out_)
+        for block in self.d_sampling_blocks:
+            out_ = block(out_)
+        out_ = self.d_sample(out_)
+
+        loss = None
+        if images_ is not None:
+            loss = torch.nn.functional.mse_loss(out_, images_)
+        return out_, loss
+
+        
