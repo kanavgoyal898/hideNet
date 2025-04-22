@@ -12,10 +12,17 @@ random.seed(0)
 np.random.seed(0)
 torch.manual_seed(0)
 
+if DEVICE == 'cuda':
+    torch.cuda.empty_cache()
+if DEVICE == 'mps':
+    torch.mps.empty_cache()
+
 transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((IMG_SIZE, IMG_SIZE)),
     torchvision.transforms.CenterCrop(IMG_SIZE),
     torchvision.transforms.ToTensor(),
+    torchvision.transforms.Normalize([0.485, 0.456, 0.406] if NUM_CHANNELS == 3 else [0.5],
+                                     [0.229, 0.224, 0.225] if NUM_CHANNELS == 3 else [0.5]),
 ])
 
 dataset_train = torchvision.datasets.OxfordIIITPet(root='../data/', split='trainval', download=True, transform=transforms)

@@ -1,5 +1,6 @@
 import torch
 import skimage
+import constants
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -181,7 +182,10 @@ def train_model(model, train_loader, monitor=True):
                 x = torch.from_numpy(e_img).to(torch.float32).to(DEVICE)
                 y = torch.from_numpy(o_img).to(torch.float32).to(DEVICE)
 
-                y_, loss = model(x, y)
+                with torch.enable_grad():
+                    with torch.autocast(device_type=DEVICE):
+                        y_, loss = model(x, y)
+
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -196,7 +200,10 @@ def train_model(model, train_loader, monitor=True):
             while d < CNN_DEPTH:
                 x = e_img
                 x = torch.from_numpy(x).to(torch.float32).to(DEVICE)
-                y, _ = model(x)
+
+                with torch.no_grad():
+                    with torch.autocast(device_type=DEVICE):
+                        y, _ = model(x)
 
                 e_img = x.to('cpu').detach().numpy()
                 o_img = y.to('cpu').detach().numpy()
