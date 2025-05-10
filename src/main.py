@@ -36,12 +36,12 @@ model.to(DEVICE)
 
 print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters() if p.requires_grad):,} parameters.\n")
 
-losses, simies = train_model(model, train_valid_loader, monitor=True)
-plot_graphs(losses, 5, 'Loss')
-plot_graphs(simies, 5, 'Structural Similarity')
+losses, simies = train_model(model, train_valid_loader, True)
+plot_graphs(losses, 5, ylabel='Loss')
+plot_graphs(simies, 5, ylabel='Structural Similarity')
 
-plot_graph(np.mean(losses, axis=1), 'Loss')
-plot_graph(np.mean(simies, axis=1), 'Structural Similarity')
+plot_graph(np.mean(losses, axis=1), ylabel='Loss')
+plot_graph(np.mean(simies, axis=1), ylabel='Structural Similarity')
 os.makedirs('./parameters', exist_ok=True)
 model_path = f'./parameters/{model.__class__.__name__}.pth'
 torch.save(model.state_dict(), model_path)

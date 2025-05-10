@@ -1,6 +1,7 @@
+import os
+
 import torch
 import skimage
-import constants
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -93,13 +94,13 @@ def to_bw(image):
         numpy.ndarray: Grayscale image of shape (B, H, W) or (H, W).
     """
 
-    if image.ndim == 4:     # (B, C, H, W)
+    if image.ndim == 4:                                 # (B, C, H, W)
         return image.mean(axis=1, keepdims=True)        # (B, C, H, W) -> (B, 1, H, W)
-    elif image.ndim == 3:   # (B, H, W) or (C, H, W)
+    elif image.ndim == 3:                               # (B, H, W) or (C, H, W)
         if image.shape[0] != BATCH_SIZE:
             return image.mean(axis=0, keepdims=True)    # (C, H, W) -> (1, H, W)
         return image                                    # (B, H, W) -> (B, H, W)
-    elif image.ndim == 2:   # (H, W)
+    elif image.ndim == 2:                               # (H, W)
         return image                                    # (H, W) -> (H, W)
     else:
         raise ValueError("Unsupported image dimensions.")
@@ -183,11 +184,11 @@ def train_model(model, train_loader, monitor=True):
                 y = torch.from_numpy(o_img).to(torch.float32).to(DEVICE)
 
                 with torch.enable_grad():
-                    with torch.autocast(device_type=DEVICE):
-                        y_, loss = model(x, y)
+                    y_, loss = model(x, y)
 
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
 
                 images_ = e_img
@@ -240,24 +241,24 @@ def train_model(model, train_loader, monitor=True):
             iter += 1
 
         scheduler.step()
+        plot_graph(loss_e, 'Iterations', 'Loss', epoch=epoch+1)
 
         if monitor:
-            show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
+            show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image", epoch=epoch+1)
         losses.append(loss_e)
         simies.append(simi_e)
 
-    if monitor:
-        show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image")
-
     return losses, simies
 
-def plot_graph(values, metric='Metric'):
+def plot_graph(values, xlabel='Epochs', ylabel='Metric', save_path="plots", *args, **kwargs):
     """
     Plots a line graph for a given set of values over epochs.
 
     Args:
-        values (list of float): A list of numerical values representing the metric over epochs.
-        metric (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+        values (list of float): A list of numerical values representing the metric over time. Defaults to 'Epochs'.
+        xlabel (str, optional): Label for the x-axis indicating the number of epochs. Defaults to 'Epochs'.
+        ylabel (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+        save_path (str, optional): Path to save the plot. Defaults to "plots".
 
     Returns:
         None
@@ -266,20 +267,28 @@ def plot_graph(values, metric='Metric'):
     plt.figure(figsize=(10, 5))
     epochs = range(1, len(values)+1)
     plt.plot(epochs, values)
-    plt.xlabel('Epochs')
-    plt.ylabel(metric)
-    plt.title(f'{metric} vs. Epochs')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if 'epoch' in kwargs:
+        plt.title(f'{ylabel} vs. {xlabel} for Epoch {kwargs["epoch"]}')
+    else:
+        plt.title(f'{ylabel} vs. {xlabel}')
 
-    plt.show();
+    if save_path:
+        save_path += f"/{ylabel.replace(' ', '_').lower()}_vs_{xlabel.replace(' ', '_').lower()}_epoch_{kwargs.get('epoch', 0)}.png"
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
 
-def plot_graphs(values, count=0, metric='Metric'):
+def plot_graphs(values, count=0, xlabel='Iterations', ylabel='Metric', save_path="plots"):
     """
     Plots multiple epoch functions from a list of lists.
 
     Args:
-        values (list of list of float): A list where each inner list represents values of a function over iterations in a specific epoch.
-        metric (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+        values (list of list of float): A list where each inner list represents values of a function over iterations in a specific epoch. Defaults to 'Iterations'.
         count (int): Number of epochs to plot. Defaults to 0.
+        xlabel (str, optional): Label for the x-axis indicating the number of iterations. Defaults to 'Iterations'.
+        ylabel (str, optional): Label for the y-axis indicating the metric being plotted. Defaults to 'Metric'.
+        save_path (str, optional): Path to save the plot. Defaults to "plots".
 
     Returns:
         None
@@ -288,12 +297,18 @@ def plot_graphs(values, count=0, metric='Metric'):
     plt.figure(figsize=(10, 5))
     for i, epoch in enumerate(values[-count:]):
         plt.plot(range(len(epoch)), epoch, label=f'Epoch {i+1}')
-    plt.xlabel('Iterations')
-    plt.ylabel(metric)
-    plt.title(f'{metric} vs. Iterations for Last {count} Epochs')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if count == 0:
+        plt.title(f'{ylabel} vs. {xlabel} for All Epochs')
+    else:
+        plt.title(f'{ylabel} vs. {xlabel} for Last {count} Epochs')
     plt.legend()
 
-    plt.show();
+    if save_path:
+        save_path += f"/{ylabel.replace(' ', '_').lower()}_vs_{xlabel.replace(' ', '_').lower()}.png"
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
 
 def show_image(img, title=""):
     if img.ndim == 3 or img.ndim == 2:
@@ -304,7 +319,7 @@ def show_image(img, title=""):
     else:
         ValueError("Input tensor should have 3 (C, H, W) or 2 (H, W) dimensions.")
 
-def show_images(image1, image2, title1="Image 1", title2="Image 2"):    
+def show_images(image1, image2, title1="Image 1", title2="Image 2", save_path="plots", *args, **kwargs):    
     plt.figure(figsize=(10, 2))
 
     plt.subplot(1, 2, 1)
@@ -317,4 +332,7 @@ def show_images(image1, image2, title1="Image 1", title2="Image 2"):
     plt.title(title2)
     plt.axis("off")
 
-    plt.show();
+    if save_path:
+        save_path += f"/{title1.replace(' ', '_').lower()}_vs_{title2.replace(' ', '_').lower()}_epoch_{kwargs.get('epoch', 0)}.png"
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
