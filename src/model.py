@@ -111,17 +111,21 @@ class UNetLikeLite(torch.nn.Module):
                 if type == "up" or type == "u":
                     self.layers = torch.nn.Sequential(
                         torch.nn.Conv2d(in_channels, out_channels, 3, 1, 1),
-                        torch.nn.LeakyReLU(inplace=True),
+                        torch.nn.BatchNorm2d(out_channels),
+                        torch.nn.ReLU(inplace=True),
                         torch.nn.Conv2d(out_channels, out_channels, 3, 1, 1),
-                        torch.nn.LeakyReLU(inplace=True),
+                        torch.nn.BatchNorm2d(out_channels),
+                        torch.nn.ReLU(inplace=True),
                     )
 
                 if type == "down" or type == "d":
                     self.layers = torch.nn.Sequential(
                         torch.nn.Conv2d(in_channels, in_channels, 3, 1, 1),
-                        torch.nn.LeakyReLU(inplace=True),
+                        torch.nn.BatchNorm2d(in_channels),
+                        torch.nn.ReLU(inplace=True),
                         torch.nn.Conv2d(in_channels, out_channels, 3, 1, 1),
-                        torch.nn.LeakyReLU(inplace=True),
+                        torch.nn.BatchNorm2d(out_channels),
+                        torch.nn.ReLU(inplace=True),
                     )
 
             def forward(self, x):
