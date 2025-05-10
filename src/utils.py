@@ -1,4 +1,5 @@
 import os
+import math
 
 import torch
 import skimage
@@ -242,7 +243,7 @@ def train_model(model, train_loader, monitor=True):
             iter += 1
 
         scheduler.step()
-        plot_graph(loss_e, 'Iterations', 'Loss', epoch=epoch+1)
+        plot_graph(np.log10(loss_e), 'Iterations', 'Logarithmic Loss', epoch=epoch+1)
 
         if monitor:
             show_images(images[0], images_[0], title1="Original Image", title2="Reconstructed Image", epoch=epoch+1)
@@ -310,6 +311,7 @@ def plot_graphs(values, count=0, xlabel='Iterations', ylabel='Metric', save_path
         save_path += f"/{ylabel.replace(' ', '_').lower()}_vs_{xlabel.replace(' ', '_').lower()}.png"
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path)
+        plt.close()
 
 def show_image(img, title=""):
     if img.ndim == 3 or img.ndim == 2:
@@ -321,6 +323,9 @@ def show_image(img, title=""):
         ValueError("Input tensor should have 3 (C, H, W) or 2 (H, W) dimensions.")
 
 def show_images(image1, image2, title1="Image 1", title2="Image 2", save_path="plots", *args, **kwargs):    
+    image1 = np.clip(image1.detach().cpu().numpy(), 0.0, 1.0) if isinstance(image1, torch.Tensor) else image1
+    image2 = np.clip(image2.detach().cpu().numpy(), 0.0, 1.0) if isinstance(image2, torch.Tensor) else image2
+
     plt.figure(figsize=(10, 2))
 
     plt.subplot(1, 2, 1)
@@ -337,3 +342,4 @@ def show_images(image1, image2, title1="Image 1", title2="Image 2", save_path="p
         save_path += f"/{title1.replace(' ', '_').lower()}_vs_{title2.replace(' ', '_').lower()}_epoch_{kwargs.get('epoch', 0)}.png"
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path)
+        plt.close()
