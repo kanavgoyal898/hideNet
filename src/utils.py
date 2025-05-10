@@ -184,7 +184,8 @@ def train_model(model, train_loader, monitor=True):
                 y = torch.from_numpy(o_img).to(torch.float32).to(DEVICE)
 
                 with torch.enable_grad():
-                    y_, loss = model(x, y)
+                    with torch.autocast(device_type=DEVICE):
+                        y_, loss = model(x, y)
 
                 optimizer.zero_grad()
                 loss.backward()

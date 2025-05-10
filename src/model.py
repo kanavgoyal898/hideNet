@@ -212,5 +212,3 @@ class UNetLikeLite(torch.nn.Module):
         if images_ is not None:
             loss = torch.nn.functional.mse_loss(out_, images_)
         return out_, loss
-
-        

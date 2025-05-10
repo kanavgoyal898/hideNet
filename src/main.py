@@ -21,8 +21,7 @@ transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((IMG_SIZE, IMG_SIZE)),
     torchvision.transforms.CenterCrop(IMG_SIZE),
     torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize([0.485, 0.456, 0.406] if NUM_CHANNELS == 3 else [0.5],
-                                     [0.229, 0.224, 0.225] if NUM_CHANNELS == 3 else [0.5]),
+    torchvision.transforms.Lambda(lambda x: 2 * x - 1),
 ])
 
 dataset_train = torchvision.datasets.OxfordIIITPet(root='../data/', split='trainval', download=True, transform=transforms)
@@ -33,6 +32,10 @@ test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=BATCH_SIZE, s
 
 model = UNetLikeLite()
 model.to(DEVICE)
+
+if DEVICE == 'cuda':
+    model = torch.nn.DataParallel(model)
+    model = torch.compile(model)
 
 print(f"Training model on {DEVICE} with {sum(p.numel() for p in model.parameters() if p.requires_grad):,} parameters.\n")
 
